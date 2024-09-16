@@ -20,6 +20,9 @@ package nya.miku.wishmaster.api.models;
 
 import android.graphics.Bitmap;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Модель капчи
  * @author miku-nyan
@@ -61,10 +64,10 @@ public class CaptchaModel {
     /**
      * Кнопки emoji-капчи (пока что только на 2ch.hk)
      */
-    public Bitmap[] emojiCaptchaButtons;
+    public List<Bitmap> emojiCaptchaButtons  = new ArrayList<>();
 
     /**
      * Изображения уже нажатых кнопок emoji-капчи (сохраняется при выходе с поля редактирования)
      */
-    public Bitmap[] emojiCaptchaButtonsPressed;
+    public List<Bitmap> emojiCaptchaButtonsPressed = new ArrayList<>();
 }

@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.lang.System;
 import java.util.ArrayList;
+import java.util.List;
 
 import nya.miku.wishmaster.R;
 import nya.miku.wishmaster.api.AbstractChanModule;
@@ -38,6 +39,7 @@ import nya.miku.wishmaster.common.Logger;
 import nya.miku.wishmaster.common.MainApplication;
 import nya.miku.wishmaster.http.interactive.InteractiveException;
 import nya.miku.wishmaster.lib.FileDialogActivity;
+import nya.miku.wishmaster.lib.GridLinearLayoutManager;
 import nya.miku.wishmaster.lib.UriFileUtils;
 import nya.miku.wishmaster.ui.CompatibilityImpl;
 import nya.miku.wishmaster.ui.CompatibilityUtils;
@@ -109,10 +111,9 @@ public class PostFormActivity extends Activity implements View.OnClickListener, 
     private Button sendButton;
 
     private LinearLayout emojiCaptchaButtonsLayout;
-    private ImageView[] emojiCaptchaButtons;
     private LinearLayout emojiCaptchaSelectedLayout;
-    private ImageView[] emojiCaptchaSelected;
-    private Bitmap[] emojiCaptchaCurrentButtonImages;
+    private GridLinearLayoutManager emojiCaptchaSelectedLayoutManager;
+    private List<Bitmap> emojiCaptchaCurrentButtonImages;
     
     private String hash;
     private BoardModel boardModel;
@@ -124,6 +125,8 @@ public class PostFormActivity extends Activity implements View.OnClickListener, 
     private ArrayList<File> attachments;
     private String currentPath;
     private long lastClickTime = 0;
+
+    private int colorFilter;
     
     @Override
     public boolean onLongClick(View v) {
@@ -188,62 +191,6 @@ public class PostFormActivity extends Activity implements View.OnClickListener, 
                 } catch (Exception e) {
                     Logger.e(TAG, e);
                 }
-                break;
-            case R.id.postform_makaba_emojicaptcha_button_0:
-            case R.id.postform_makaba_emojicaptcha_button_1:
-            case R.id.postform_makaba_emojicaptcha_button_2:
-            case R.id.postform_makaba_emojicaptcha_button_3:
-            case R.id.postform_makaba_emojicaptcha_button_4:
-            case R.id.postform_makaba_emojicaptcha_button_5:
-            case R.id.postform_makaba_emojicaptcha_button_6:
-            case R.id.postform_makaba_emojicaptcha_button_7:
-                emojiCaptchaSelectedLayout.setVisibility(View.VISIBLE);
-                int buttonIndex = Integer.parseInt(v.getTag().toString());
-                Async.runAsync(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Logger.d(TAG, "clicked emojiCaptchaButton " + buttonIndex + " ID=" + v.getId());
-                            currentTask = new CancellableTask.BaseCancellableTask();
-                            final CaptchaModel captchaModel = ((MakabaModule) chan).clickEmojiCaptcha(buttonIndex, null, currentTask);
-                            int count = ((MakabaModule) chan).getClickCount();
-                            Async.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    emojiCaptchaSelected[count - 1].setImageBitmap(emojiCaptchaCurrentButtonImages[buttonIndex]);
-                                    if(captchaModel.emojiCaptchaButtonsPressed == null)
-                                    {
-                                        captchaModel.emojiCaptchaButtonsPressed = new Bitmap[3];
-                                    }
-                                    for(int i = 0; i < count; i++)
-                                    {
-                                        captchaModel.emojiCaptchaButtonsPressed[i] = ((BitmapDrawable)emojiCaptchaSelected[i].getDrawable()).getBitmap();
-                                    }
-                                    if(captchaModel.emojiSuccess)
-                                    {
-                                        emojiCaptchaButtonsLayout.setVisibility(View.GONE);
-                                        captchaModel.bitmap = ((BitmapDrawable)captchaView.getDrawable()).getBitmap();
-                                    }
-                                    MainApplication.getInstance().draftsCache.setLastCaptcha(hash, captchaModel);
-
-                                    if(!captchaModel.emojiSuccess)
-                                    {
-                                        captchaView.setImageBitmap(captchaModel.bitmap);
-                                        emojiCaptchaCurrentButtonImages = captchaModel.emojiCaptchaButtons;
-                                        for(int i = 0; i < 8; i++)
-                                        {
-                                            int tag = Integer.parseInt(emojiCaptchaButtons[i].getTag().toString());
-                                            emojiCaptchaButtons[i].setImageBitmap(captchaModel.emojiCaptchaButtons[tag]);
-                                        }
-                                    }
-                                }
-                            });
-                        } catch (final Exception e) {
-                            Logger.e(TAG, e);
-                        }
-                    }
-                });
-
                 break;
         }
     }
@@ -600,16 +547,8 @@ public class PostFormActivity extends Activity implements View.OnClickListener, 
         sendButton.setOnLongClickListener(this);
 
         emojiCaptchaButtonsLayout = (LinearLayout) findViewById(R.id.postform_emojicaptcha_buttons_layout);
-        emojiCaptchaButtons = new ImageView[8];
-        for(int i = 0; i < 8; i++)
-        {
-            emojiCaptchaButtons[i] = (ImageView) findViewById(R.id.postform_makaba_emojicaptcha_button_0 + i);
-        }
         emojiCaptchaSelectedLayout = (LinearLayout) findViewById(R.id.postform_emojicaptcha_selected_layout);
-        emojiCaptchaSelected = new ImageView[3];
-        emojiCaptchaSelected[0] = (ImageView) findViewById(R.id.postform_emojicaptcha_selected_1);
-        emojiCaptchaSelected[1] = (ImageView) findViewById(R.id.postform_emojicaptcha_selected_2);
-        emojiCaptchaSelected[2] = (ImageView) findViewById(R.id.postform_emojicaptcha_selected_3);
+        emojiCaptchaSelectedLayoutManager = new GridLinearLayoutManager(emojiCaptchaSelectedLayout);
         
         if (settings.isHidePersonalData()) {
             nameLayout.setVisibility(View.GONE);
@@ -689,7 +628,84 @@ public class PostFormActivity extends Activity implements View.OnClickListener, 
             }
         }
     }
-    
+
+    private ImageView makeSelectedImageView() {
+        ImageView selected = new ImageView(this);
+        int iconSizeDp = getResources().getDimensionPixelSize(R.dimen.emoji_captcha_icon_size);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(iconSizeDp, iconSizeDp);
+        selected.setLayoutParams(params);
+        selected.setColorFilter(colorFilter);
+        return selected;
+    }
+
+    private ImageView makeEmojiCaptchaButton() {
+        ImageView button = new ImageView(this);
+        int iconSizeDp = getResources().getDimensionPixelSize(R.dimen.emoji_captcha_icon_size);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(iconSizeDp, iconSizeDp);
+        params.weight = 1;
+        button.setLayoutParams(params);
+        button.setColorFilter(colorFilter);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onEmojiCaptchaButtonClick(v);
+            }
+        });
+        return button;
+    }
+
+    private void onEmojiCaptchaButtonClick(View v) {
+        emojiCaptchaSelectedLayout.setVisibility(View.VISIBLE);
+        int buttonIndex = Integer.parseInt(v.getTag().toString());
+
+        // Disable buttons to prevent double-click
+        for (int i = 0; i < emojiCaptchaButtonsLayout.getChildCount(); i++) {
+            emojiCaptchaButtonsLayout.getChildAt(i).setEnabled(false);
+        }
+        Async.runAsync(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Logger.d(TAG, "clicked emojiCaptchaButton " + buttonIndex + " ID=" + v.getId());
+                    currentTask = new CancellableTask.BaseCancellableTask();
+                    final CaptchaModel captchaModel = ((MakabaModule) chan).clickEmojiCaptcha(buttonIndex, null, currentTask);
+                    if (captchaModel != null) {
+                        Async.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ImageView newSelected = makeSelectedImageView();
+                                emojiCaptchaSelectedLayoutManager.addView(newSelected);
+                                Bitmap selectedBitmap = emojiCaptchaCurrentButtonImages.get(buttonIndex);
+                                newSelected.setImageBitmap(selectedBitmap);
+                                captchaModel.emojiCaptchaButtonsPressed.add(selectedBitmap);
+                                if (captchaModel.emojiSuccess) {
+                                    emojiCaptchaButtonsLayout.setVisibility(View.GONE);
+                                    captchaModel.bitmap = ((BitmapDrawable) captchaView.getDrawable()).getBitmap();
+                                }
+                                MainApplication.getInstance().draftsCache.setLastCaptcha(hash, captchaModel);
+
+                                if (!captchaModel.emojiSuccess) {
+                                    fillButtonLayout(captchaModel);
+                                }
+                            }
+                        });
+                    }
+                } catch (final Exception e) {
+                    Logger.e(TAG, e);
+                } finally {
+                    Async.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (int i = 0; i < emojiCaptchaButtonsLayout.getChildCount(); i++) {
+                                emojiCaptchaButtonsLayout.getChildAt(i).setEnabled(true);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
     private void saveSendPostModel() {
         boolean hidePersonalData = settings.isHidePersonalData();
         sendPostModel.name = hidePersonalData && boardModel.allowNames ? settings.getDefaultName() : nameField.getText().toString();
@@ -748,42 +764,34 @@ public class PostFormActivity extends Activity implements View.OnClickListener, 
                 emojiCaptchaButtonsLayout.setVisibility(View.VISIBLE);
                 emojiCaptchaSelectedLayout.setVisibility(View.VISIBLE);
                 captchaField.setVisibility(View.GONE);
-                emojiCaptchaCurrentButtonImages = captchaModel.emojiCaptchaButtons;
 
                 TypedValue typedValue = ThemeUtils.resolveAttribute(getTheme(), android.R.attr.textColorPrimary, true);
-                int color = Color.BLACK;
+                colorFilter = Color.BLACK;
                 if (typedValue.type >= TypedValue.TYPE_FIRST_COLOR_INT && typedValue.type <= TypedValue.TYPE_LAST_COLOR_INT) {
-                    color = typedValue.data;
+                    colorFilter = typedValue.data;
                 } else {
                     try {
-                        color = CompatibilityUtils.getColor(getResources(), typedValue.resourceId);
+                        colorFilter = CompatibilityUtils.getColor(getResources(), typedValue.resourceId);
                     } catch (Exception e) {
                         Logger.e(TAG, e);
                     }
                 }
 
                 if(!captchaModel.emojiSuccess) {
-                    for (int i = 0; i < 8; i++) {
-                        int tag = Integer.parseInt(emojiCaptchaButtons[i].getTag().toString());
-                        emojiCaptchaButtons[i].setImageBitmap(captchaModel.emojiCaptchaButtons[tag]);
-                        emojiCaptchaButtons[i].setColorFilter(color);
-                        Logger.d(TAG, "setting emojiCaptchaButton " + i + " to tag " + tag);
-                    }
+                    fillButtonLayout(captchaModel);
                 }
                 else
                 {
                     emojiCaptchaButtonsLayout.setVisibility(View.GONE);
                 }
-
-                for(int i = 0; i < 3; i++)
-                {
-                    if(!clearField) {
-                        emojiCaptchaSelected[i].setImageBitmap(captchaModel.emojiCaptchaButtonsPressed[i]);
+                if (!clearField) {
+                    for (int i = 0; i < captchaModel.emojiCaptchaButtonsPressed.size(); i++) {
+                        ImageView newSelectedCaptcha = makeSelectedImageView();
+                        newSelectedCaptcha.setImageBitmap(captchaModel.emojiCaptchaButtonsPressed.get(i));
+                        emojiCaptchaSelectedLayoutManager.addView(newSelectedCaptcha);
                     }
-                    else {
-                        emojiCaptchaSelected[i].setImageBitmap(null);
-                    }
-                    emojiCaptchaSelected[i].setColorFilter(color);
+                } else {
+                    emojiCaptchaSelectedLayout.removeAllViews();
                 }
             }
             else
@@ -795,6 +803,18 @@ public class PostFormActivity extends Activity implements View.OnClickListener, 
             captchaLayout.setVisibility(View.GONE);
             captchaField.setVisibility(View.GONE);
             sendButton.setLayoutParams(getWideLayoutParams());
+        }
+    }
+
+    private void fillButtonLayout(CaptchaModel captchaModel) {
+        emojiCaptchaCurrentButtonImages = captchaModel.emojiCaptchaButtons;
+        emojiCaptchaButtonsLayout.removeAllViews();
+        for (int i = 0; i < captchaModel.emojiCaptchaButtons.size(); i++) {
+            ImageView button = makeEmojiCaptchaButton();
+            button.setImageBitmap(captchaModel.emojiCaptchaButtons.get(i));
+            button.setTag(i);
+            emojiCaptchaButtonsLayout.addView(button);
+            Logger.d(TAG, "setting emojiCaptchaButton " + i + " to tag " + button.getTag());
         }
     }
     

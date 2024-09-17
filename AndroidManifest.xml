@@ -30,10 +30,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     
     <uses-sdk
-        android:minSdkVersion="8"
-        android:targetSdkVersion="30" />
+        android:minSdkVersion="4"
+        android:targetSdkVersion="24" />
 
     <application
         android:name="nya.miku.wishmaster.common.MainApplication"

@@ -1,13 +1,15 @@
 package nya.miku.wishmaster.lib;
 
-import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class GridLinearLayoutManager {
 
-    private LinearLayout managedLinearLayout;
+    private final LinearLayout managedLinearLayout;
 
     public GridLinearLayoutManager(LinearLayout layout) {
         managedLinearLayout = layout;
@@ -27,6 +29,11 @@ public class GridLinearLayoutManager {
                     estimatedChild.getLayoutParams().width;
             int maxSize = activeChildLayout.getOrientation() == LinearLayout.VERTICAL ?
                     managedLinearLayout.getHeight() : managedLinearLayout.getWidth();
+            //wait for initialization
+            if (maxSize == 0) {
+                managedLinearLayout.post(() -> addView(view));
+                return;
+            }
             if (estimatedSize * (activeChildLayout.getChildCount() + 1) > maxSize) {
                 createChildLinearLayout();
                 activeChildLayout = (LinearLayout) managedLinearLayout.
@@ -34,6 +41,17 @@ public class GridLinearLayoutManager {
             }
         }
         activeChildLayout.addView(view);
+    }
+
+    public List<View> getChildren() {
+        List<View> list = new ArrayList<>();
+        for (int i=0; i< managedLinearLayout.getChildCount(); i++) {
+            LinearLayout selectedChildLinearLayout = (LinearLayout) managedLinearLayout.getChildAt(i);
+            for (int j=0; j< selectedChildLinearLayout.getChildCount(); j++) {
+                list.add(selectedChildLinearLayout.getChildAt(j));
+            }
+        }
+        return list;
     }
 
     private void createChildLinearLayout() {

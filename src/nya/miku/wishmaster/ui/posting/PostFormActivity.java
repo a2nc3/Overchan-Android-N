@@ -76,7 +76,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -677,7 +676,16 @@ public class PostFormActivity extends Activity implements View.OnClickListener, 
                                 emojiCaptchaSelectedLayoutManager.addView(newSelected);
                                 Bitmap selectedBitmap = emojiCaptchaCurrentButtonImages.get(buttonIndex);
                                 newSelected.setImageBitmap(selectedBitmap);
-                                captchaModel.emojiCaptchaButtonsPressed.add(selectedBitmap);
+                                captchaModel.emojiCaptchaButtonsPressed.clear();
+                                List<View> selectedImageViews = emojiCaptchaSelectedLayoutManager
+                                        .getChildren();
+                                for (int i=0; i< selectedImageViews.size(); i++) {
+                                    ImageView selectedImageView = (ImageView) selectedImageViews.get(i);
+                                    captchaModel.emojiCaptchaButtonsPressed.add(
+                                            ((BitmapDrawable) selectedImageView.getDrawable())
+                                                    .getBitmap()
+                                    );
+                                }
                                 if (captchaModel.emojiSuccess) {
                                     emojiCaptchaButtonsLayout.setVisibility(View.GONE);
                                     captchaModel.bitmap = ((BitmapDrawable) captchaView.getDrawable()).getBitmap();

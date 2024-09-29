@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <script>
+        var intervalId = 0;
+        function debugLayout()
+        {
+            setColors("black", "white");
+            setLoading(false);
+
+            for(var i = 0; i < 8; i++)
+            {
+                var divEl = document.createElement("div");
+                divEl.classList.add("captcha-button");
+                divEl.id = `${i}`;
+                var imgEl = document.createElement("img");
+                imgEl.src = "captcha-button-test.png";
+                imgEl.classList.add("captcha-button-image");
+                divEl.appendChild(imgEl);
+                document.getElementById("captcha-buttons-container").appendChild(divEl);
+            }
+
+            for(var i = 0; i < 3; i++)
+            {
+                var divEl = document.createElement("div");
+                divEl.classList.add("captcha-button-selected");
+                var imgEl = document.createElement("img");
+                imgEl.src = "captcha-button-test.png";
+                imgEl.classList.add("captcha-button-selected-image");
+                divEl.appendChild(imgEl);
+                document.getElementById("captcha-buttons-selected-container").appendChild(divEl);
+            }
+        }
+        function startup()
+        {
+            if(navigator.userAgent.indexOf("wv") < 0)
+            {
+                debugLayout();
+                return;
+            }
+            setColors(MakabaCaptcha.GetForegroundColor(), MakabaCaptcha.GetBackgroundColor());
+            window.loadingCaptcha = true;
+            loadEmojiCaptcha();
+            setLoading(false);
+        }
+
+        function loadEmojiCaptcha(clearSelected = false)
+        {
+            document.getElementById("captcha-buttons-container").innerHTML = "";
+            if(clearSelected)
+                document.getElementById("captcha-buttons-selected-container").innerHTML = "";
+            document.getElementById("captcha-image").src = "data:image/png;base64," + MakabaCaptcha.GetBase64EncodedCaptchaImage();
+            for(var i = 0; i < MakabaCaptcha.GetCaptchaButtonCount(); i++)
+            {
+                var buttonImage = MakabaCaptcha.GetBase64EncodedButtonImages(i);
+                var divEl = document.createElement("div");
+                divEl.classList.add("captcha-button");
+                divEl.id = `${i}`;
+                divEl.onclick = beginClickEmojiCaptcha;
+                var imgEl = document.createElement("img");
+                imgEl.src = `data:image/png;base64,${buttonImage}`;
+                imgEl.classList.add("captcha-button-image");
+                divEl.appendChild(imgEl);
+                document.getElementById("captcha-buttons-container").appendChild(divEl);
+            }
+        }
+
+        function setLoading(v)
+        {
+            document.getElementById("loading-splash").classList.toggle("hidden");
+            window.loadingCaptcha = v;
+        }
+
+        function beginClickEmojiCaptcha(e)
+        {
+            if(window.loadingCaptcha)
+            {
+                return;
+            }
+            intervalId = setInterval(function() { detectNetworkError(); }, 1000);
+            setLoading(true);
+            setTimeout(function() { clickEmojiCaptcha(e) }, 100);
+        }
+
+        function clickEmojiCaptcha(e)
+        {
+            MakabaCaptcha.LogToLogcat(`styles: ${document.getElementById("loading-splash").classList.toString()}`);
+            var id = Number(e.target.parentElement.id);
+            MakabaCaptcha.LogToLogcat(`clickEmojiCaptcha: ${id}`);
+            MakabaCaptcha.ClickEmojiCaptcha(id);
+            clearInterval(intervalId);
+            var divEl = document.createElement("div");
+            divEl.classList.add("captcha-button-selected");
+            divEl.onclick = clickEmojiCaptcha;
+            var imgEl = document.createElement("img");
+            imgEl.src = e.target.src;
+            imgEl.classList.add("captcha-button-selected-image");
+            divEl.appendChild(imgEl);
+            document.getElementById("captcha-buttons-selected-container").appendChild(divEl);
+
+            if(!MakabaCaptcha.GetEmojiCaptchaCompleted())
+            {
+                loadEmojiCaptcha();
+                setLoading(false);
+            }
+            else
+            {
+                MakabaCaptcha.LogToLogcat("captcha completed, should close webview now");
+                MakabaCaptcha.Finish();
+            }
+        }
+
+        function beginUpdateEmojiCaptcha()
+        {
+            intervalId = setInterval(function() { detectNetworkError(); }, 100);
+            setLoading(true);
+            setTimeout(function() { updateEmojiCaptcha() }, 100);
+        }
+
+        function updateEmojiCaptcha()
+        {
+            MakabaCaptcha.Update();
+            clearInterval(intervalId);
+            loadEmojiCaptcha(true);
+            setLoading(false);
+        }
+
+        function setColors(fore, back)
+        {
+            var styleEl = document.createElement("style");
+            styleEl.innerHTML = ":root { --foreground: " + fore + "; --background: " + back + ";}";
+            document.head.appendChild(styleEl);
+        }
+
+        function detectNetworkError()
+        {
+            if(MakabaCaptcha.GetExceptionOccurred())
+            {
+                MakabaCaptcha.LogToLogcat("detectNetworkError: true");
+                clearInterval(intervalId);
+                MakabaCaptcha.ShowErrorMessage();
+                beginUpdateEmojiCaptcha();
+            }
+        }
+    </script>
+    <style>
+        *
+        {
+            background-color: var(--background);
+            --border: 2px solid #f00;
+        }
+        #captcha-image-container
+        {
+            width: 96%;
+            padding: 2%;
+        }
+        #captcha-image
+        {
+            width: 100%;
+        }
+        #captcha-buttons-container
+        {
+            width: 96%;
+            padding: 2%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .captcha-button
+        {
+            position: relative;
+            background-size: cover;
+            width: 24%;
+            height: 24%;
+            padding-bottom: 5%;
+        }
+        .captcha-button:hover, .captcha-button:active
+        {
+            filter: grayscale(100%);
+        }
+        .captcha-button-image
+        {
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #captcha-buttons-selected-container
+        {
+            width: 96%;
+            padding: 2%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .captcha-button-selected
+        {
+            position: relative;
+            width: 20%;
+            height: 20%;
+        }
+        .captcha-button-selected::after
+        {
+          content: '\2713';
+          display: inline-block;
+          color: green;
+          position: absolute;
+          top: 80%;
+          left: 80%;
+        }
+        .captcha-button-selected-image
+        {
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hidden
+        {
+            display: none;
+        }
+        #loading-splash
+        {
+            width: 100vw;
+            height: 100vh;
+            z-index: 999;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: var(--background);
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            50% {
+                transform: rotate(360deg);
+            }
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+        #loading-splash-image-container
+        {
+            position: relative;
+            top: 45vh;
+            left: 45vw;
+            width: 10vw;
+            height: 10vh;
+            animation: spin 2s linear infinite;
+        }
+        #loading-splash-image
+        {
+            fill: var(--foreground);
+        }
+    </style>
+</head>
+<body onload="startup()">
+<div id="loading-splash"><div id="loading-splash-image-container">
+    <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+    <svg fill="#000000" version="1.1" id="loading-splash-image" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+         width="100%" height="100%" viewBox="0 0 26.349 26.35"
+         xml:space="preserve">
+<g>
+	<g>
+		<circle cx="13.792" cy="3.082" r="3.082"/>
+        <circle cx="13.792" cy="24.501" r="1.849"/>
+        <circle cx="6.219" cy="6.218" r="2.774"/>
+        <circle cx="21.365" cy="21.363" r="1.541"/>
+        <circle cx="3.082" cy="13.792" r="2.465"/>
+        <circle cx="24.501" cy="13.791" r="1.232"/>
+        <path d="M4.694,19.84c-0.843,0.843-0.843,2.207,0,3.05c0.842,0.843,2.208,0.843,3.05,0c0.843-0.843,0.843-2.207,0-3.05
+			C6.902,18.996,5.537,18.988,4.694,19.84z"/>
+        <circle cx="21.364" cy="6.218" r="0.924"/>
+	</g>
+</g>
+</svg></div></div>
+<div id="captcha-image-container"><img id="captcha-image" src="captcha-test.png" onclick="beginUpdateEmojiCaptcha()" /></div>
+<div id="captcha-buttons-container"></div>
+<div id="captcha-buttons-selected-container"></div>
+</body>
+</html>

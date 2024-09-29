@@ -1072,7 +1072,7 @@ public class MakabaModule extends CloudflareChanModule {
                 byte[] decodedCaptchaButtonBytes = android.util.Base64.decode(base64EncodedCaptchaButton, Base64.DEFAULT);
                 emojiCaptchaCurrentButtons[i] = decodedCaptchaButtonBytes;
                 crc.update(decodedCaptchaButtonBytes);
-                Logger.d(TAG, "got step" + getClickCount() + " emojiCaptchaButton " + i + " hash=" + Long.toHexString(crc.getValue()));
+                Logger.d(TAG, "got step" + emojiCaptchaClickCount + " emojiCaptchaButton " + i + " hash=" + Long.toHexString(crc.getValue()));
                 crc.reset();
                 captchaModel.emojiCaptchaButtons[i] = BitmapFactory.decodeByteArray(decodedCaptchaButtonBytes, 0, decodedCaptchaButtonBytes.length);
             }
@@ -1080,10 +1080,5 @@ public class MakabaModule extends CloudflareChanModule {
             return captchaModel;
         }
         return null;
-    }
-
-    public int getClickCount()
-    {
-        return emojiCaptchaClickCount;
     }
 }

@@ -745,8 +745,7 @@ public class PostFormActivity extends Activity implements View.OnClickListener, 
             }
             else
             {
-                emojiCaptchaButtonsLayout.setVisibility(View.GONE);
-                emojiCaptchaSelectedLayout.setVisibility(View.GONE);
+                emojiCaptchaWebview.setVisibility(View.GONE);
             }
         } else {
             captchaLayout.setVisibility(View.GONE);

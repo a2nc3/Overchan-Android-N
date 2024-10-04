@@ -24,13 +24,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     android:orientation="vertical" 
     android:background="?attr/activityRootBackground"
     tools:ignore="Overdraw" >
-    
+
     <LinearLayout
         android:id="@+id/board_search_bar"
         android:layout_width="match_parent"
         android:layout_height="@dimen/panel_height"
         android:orientation="horizontal"
-        android:visibility="gone" >
+        android:visibility="gone">
+
         <EditText
             android:id="@+id/board_search_field"
             android:layout_width="0dp"
@@ -38,24 +39,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             android:layout_weight="1"
             android:hint="@string/search_bar_hint"
             android:singleLine="true" />
+
         <ImageView
-            style="@style/SelectableItem"
             android:id="@+id/board_search_previous"
+            style="@style/SelectableItem"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:contentDescription="@string/previous"
             android:padding="4dp"
             android:src="?attr/iconItemPrevious"
-            android:contentDescription="@string/previous"
             android:visibility="gone" />
+
         <ImageView
-            style="@style/SelectableItem"
             android:id="@+id/board_search_next"
+            style="@style/SelectableItem"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:contentDescription="@string/next"
             android:padding="4dp"
             android:src="?attr/iconItemNext"
-            android:contentDescription="@string/next"
             android:visibility="gone" />
+
         <TextView
             android:id="@+id/board_search_result"
             android:layout_width="wrap_content"
@@ -63,14 +67,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             android:gravity="center"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:visibility="gone" />
+
         <ImageView
-            style="@style/SelectableItem"
             android:id="@+id/board_search_close"
+            style="@style/SelectableItem"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:contentDescription="@string/close"
             android:padding="4dp"
-            android:src="?attr/iconBtnClose"
-            android:contentDescription="@string/close" />
+            android:src="?attr/iconBtnClose" />
     </LinearLayout>
     
     <FrameLayout

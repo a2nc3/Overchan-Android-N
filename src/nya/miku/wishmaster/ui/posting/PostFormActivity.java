@@ -389,28 +389,29 @@ public class PostFormActivity extends Activity implements View.OnClickListener, 
 
     private void send(Boolean skipEmojiCaptcha)
     {
+        saveSendPostModel();
+        if (boardModel.requiredFileForNewThread && sendPostModel.threadNumber == null && sendPostModel.attachments.length == 0) {
+            Toast.makeText(this, R.string.postform_required_file, Toast.LENGTH_LONG).show();
+            return;
+        } else if (sendPostModel.comment.length() == 0 && sendPostModel.attachments.length == 0) {
+            Toast.makeText(this, R.string.postform_empty_comment, Toast.LENGTH_LONG).show();
+            return;
+        }
+
         if(emojiCaptchaUsed && !skipEmojiCaptcha)
         {
             beginEmojiCaptcha();
             return;
         }
-        saveSendPostModel();
-        if (boardModel.requiredFileForNewThread && sendPostModel.threadNumber == null && sendPostModel.attachments.length == 0) {
-            Toast.makeText(this, R.string.postform_required_file, Toast.LENGTH_LONG).show();
-        } else if (sendPostModel.comment.length() == 0 && sendPostModel.attachments.length == 0) {
-            Toast.makeText(this, R.string.postform_empty_comment, Toast.LENGTH_LONG).show();
-            if(emojiCaptchaUsed) {
-                updateCaptcha();
-            }
-        } else {
-            MainApplication.getInstance().draftsCache.clearLastCaptcha();
-            Intent startPostingService = new Intent(PostFormActivity.this, PostingService.class);
-            startPostingService.putExtra(PostingService.EXTRA_PAGE_HASH, hash);
-            startPostingService.putExtra(PostingService.EXTRA_SEND_POST_MODEL, sendPostModel);
-            startPostingService.putExtra(PostingService.EXTRA_BOARD_MODEL, boardModel);
-            finish();
-            startService(startPostingService);
-        }
+
+        MainApplication.getInstance().draftsCache.clearLastCaptcha();
+        Intent startPostingService = new Intent(PostFormActivity.this, PostingService.class);
+        startPostingService.putExtra(PostingService.EXTRA_PAGE_HASH, hash);
+        startPostingService.putExtra(PostingService.EXTRA_SEND_POST_MODEL, sendPostModel);
+        startPostingService.putExtra(PostingService.EXTRA_BOARD_MODEL, boardModel);
+        finish();
+        startService(startPostingService);
+
     }
     
     private void handleFile(File file) {
